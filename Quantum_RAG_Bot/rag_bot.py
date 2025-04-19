@@ -1,54 +1,64 @@
-from langchain.document_loaders import PyPDFLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.vectorstores import FAISS
-from langchain.llms import OpenAI
-from langchain.chains import RetrievalQA
 import os
+import gdown
+from langchain_community.document_loaders import PyPDFLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.embeddings import OpenAIEmbeddings
+from langchain_community.vectorstores import FAISS
+from langchain.chains import RetrievalQA
+from langchain_community.llms import OpenAI
 
-# 1. Load all PDF files
-def load_documents(folder_path):
+
+# Download from Google Drive
+def download_from_gdrive(file_id, save_path):
+    url = f"https://drive.google.com/uc?id={file_id}"
+    gdown.download(url, save_path, quiet=False)
+
+
+# Load and parse PDFs
+def load_documents_from_drive(file_ids):
+    os.makedirs("temp_books", exist_ok=True)
     documents = []
-    for filename in os.listdir(folder_path):
-        if filename.endswith('.pdf'):
-            loader = PyPDFLoader(os.path.join(folder_path, filename))
-            documents.extend(loader.load())
+
+    for i, file_id in enumerate(file_ids):
+        save_path = f"temp_books/book_{i}.pdf"
+        download_from_gdrive(file_id, save_path)
+
+        loader = PyPDFLoader(save_path)
+        documents.extend(loader.load())
+
     return documents
 
-# 2. Chunk the documents
+
+# Split into chunks
 def split_documents(documents, chunk_size=1000, chunk_overlap=200):
     splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
     return splitter.split_documents(documents)
 
-# 3. Embed and create FAISS index
+
+# Embed and store
 def create_vectorstore(chunks):
     embeddings = OpenAIEmbeddings()
     return FAISS.from_documents(chunks, embeddings)
 
-# 4. Create QA chain
+
+# Create the RAG QA chain
 def get_rag_chain(vectorstore):
     retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
     llm = OpenAI(temperature=0)
     return RetrievalQA.from_chain_type(llm=llm, retriever=retriever, return_source_documents=True)
 
-# === MAIN ===
-def build_rag_bot(books_folder):
-    print("[+] Loading documents...")
-    docs = load_documents(books_folder)
+
+# Main entry point
+def build_rag_bot(file_ids):
+    print("[+] Downloading and loading documents...")
+    docs = load_documents_from_drive(file_ids)
     print(f"[+] Loaded {len(docs)} pages")
 
-    print("[+] Splitting documents...")
+    print("[+] Splitting into chunks...")
     chunks = split_documents(docs)
 
     print("[+] Creating FAISS vector store...")
     vectorstore = create_vectorstore(chunks)
 
-    print("[+] Building RAG chain...")
-    rag_chain = get_rag_chain(vectorstore)
-
-    return rag_chain
-
-# You can now use:
-# rag_bot = build_rag_bot("./books")
-# result = rag_bot.run("Explain the phase estimation algorithm")
-# print(result)
+    print("[+] Initializing QA chain...")
+    return get_rag_chain(vectorstore)
