@@ -1,11 +1,15 @@
-import fitz  # PyMuPDF
+import os
+import fitz
 import openai
 import re
 
-openai.api_key = os.getenv("OPENAI_API_KEY")  # or set directly
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# Section headers (you can expand this list)
-SECTION_TITLES = ["abstract", "introduction", "related work", "methods", "methodology", "results", "discussion", "conclusion"]
+SECTION_TITLES = ["abstract", "introduction", "methods", "results", "discussion", "conclusion"]
+
+def extract_text_from_pdf(pdf_path: str) -> str:
+    doc = fitz.open(pdf_path)
+    return "\n".join(page.get_text() for page in doc)
 
 def extract_sections(text: str) -> dict:
     sections = {}
@@ -15,16 +19,11 @@ def extract_sections(text: str) -> dict:
         matches = list(re.finditer(pattern, text))
         if not matches:
             continue
-
         start = matches[0].end()
         end = matches[1].start() if len(matches) > 1 else len(text)
         content = text[start:end].strip()
         sections[title.title()] = content
     return sections
-
-def extract_text_from_pdf(pdf_path: str) -> str:
-    doc = fitz.open(pdf_path)
-    return "\n".join(page.get_text() for page in doc)
 
 def summarize_text(text, section="Section"):
     prompt = f"Summarize the following {section} from a research paper:\n\n{text}"
