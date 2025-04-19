@@ -53,7 +53,7 @@ def summarize_text(text, section="Section"):
     for i, chunk in enumerate(chunks):
         prompt = f"Summarize part {i+1} of the {section} section of this research paper:\n\n{chunk}"
         response = client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
             max_tokens=500
