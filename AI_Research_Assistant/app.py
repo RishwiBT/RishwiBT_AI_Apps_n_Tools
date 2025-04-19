@@ -9,7 +9,7 @@ st.set_page_config(page_title="AI Research Assistant", page_icon="📄")
 st.title("🤖 AI Research Assistant")
 st.markdown("Fetch and summarize academic papers by section using OpenAI GPT-4.")
 
-query = st.text_input("🔍 Enter paper title or arXiv ID:")
+query = st.text_input("1904.06560")
 
 if query:
     with st.spinner("Fetching paper..."):
