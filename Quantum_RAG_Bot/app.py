@@ -20,10 +20,13 @@ rag_bot = load_bot()
 query = st.text_input("💬 Ask a question:")
 if query and rag_bot:
     with st.spinner("Thinking..."):
-        result = rag_bot.run(query)
-        st.markdown("### ✅ Answer")
-        st.write(result["result"])
+        result = rag_bot.invoke({"query": query})
 
-        st.markdown("### 📚 Source Documents")
-        for doc in result["source_documents"]:
-            st.write(f"- {doc.metadata['source']}")
+        if "result" in result:
+            st.markdown("### ✅ Answer")
+            st.write(result["result"])
+
+        if "source_documents" in result:
+            st.markdown("### 📚 Source Documents")
+            for doc in result["source_documents"]:
+                st.write(f"- {doc.metadata.get('source', 'Unknown')}")
