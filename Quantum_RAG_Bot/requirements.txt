@@ -6,3 +6,4 @@ tiktoken
 unstructured
 pypdf
 langchain_community
+gdown
