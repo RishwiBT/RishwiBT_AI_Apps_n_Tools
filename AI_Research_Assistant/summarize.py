@@ -29,16 +29,38 @@ from openai import OpenAI
 
 client = OpenAI()
 
-def summarize_text(text, section="Section"):
-    prompt = f"Summarize the following {section} from a research paper:\n\n{text}"
+def split_into_chunks(text, max_tokens=3000):
+    paragraphs = text.split("\n\n")
+    chunks = []
+    current_chunk = ""
 
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.3,
-        max_tokens=500
-    )
-    return response.choices[0].message.content
+    for para in paragraphs:
+        if len(current_chunk + para) > max_tokens:
+            chunks.append(current_chunk)
+            current_chunk = para
+        else:
+            current_chunk += "\n\n" + para
+
+    if current_chunk:
+        chunks.append(current_chunk)
+
+    return chunks
+    
+def summarize_text(text, section="Section"):
+    chunks = split_into_chunks(text)
+
+    summaries = []
+    for i, chunk in enumerate(chunks):
+        prompt = f"Summarize part {i+1} of the {section} section of this research paper:\n\n{chunk}"
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+            max_tokens=500
+        )
+        summaries.append(response.choices[0].message.content)
+
+    return "\n\n".join(summaries)
 
 def summarize_sections(pdf_path: str) -> dict:
     raw_text = extract_text_from_pdf(pdf_path)
