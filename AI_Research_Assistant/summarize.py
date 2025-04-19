@@ -25,15 +25,20 @@ def extract_sections(text: str) -> dict:
         sections[title.title()] = content
     return sections
 
+from openai import OpenAI
+
+client = OpenAI()
+
 def summarize_text(text, section="Section"):
     prompt = f"Summarize the following {section} from a research paper:\n\n{text}"
-    response = openai.ChatCompletion.create(
+
+    response = client.chat.completions.create(
         model="gpt-4",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
         max_tokens=500
     )
-    return response['choices'][0]['message']['content']
+    return response.choices[0].message.content
 
 def summarize_sections(pdf_path: str) -> dict:
     raw_text = extract_text_from_pdf(pdf_path)
