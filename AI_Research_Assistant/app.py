@@ -1,22 +1,29 @@
 import streamlit as st
-from rag_bot import build_rag_bot
+from fetch_paper import fetch_arxiv_pdf
+from summarize import summarize_sections
+import tempfile
+import os
 
-st.title("📘 Quantum RAG Bot")
-st.markdown("Ask anything from your quantum computing books.")
+st.set_page_config(page_title="AI Research Assistant", page_icon="📄")
 
-@st.cache_resource
-def load_bot():
-    return build_rag_bot("./books")
+st.title("🤖 AI Research Assistant")
+st.markdown("Fetch and summarize academic papers by section using OpenAI GPT-4.")
 
-rag_bot = load_bot()
+query = st.text_input("🔍 Enter paper title or arXiv ID:")
 
-query = st.text_input("Ask a question:")
 if query:
-    with st.spinner("Thinking..."):
-        result = rag_bot(query)
-        st.markdown("### Answer")
-        st.write(result["result"])
+    with st.spinner("Fetching paper..."):
+        pdf_path = fetch_arxiv_pdf(query)
 
-        st.markdown("### Sources")
-        for doc in result["source_documents"]:
-            st.write(f"- {doc.metadata['source']}")
+    if pdf_path:
+        st.success("PDF fetched successfully!")
+        with st.spinner("Summarizing paper by section..."):
+            summaries = summarize_sections(pdf_path)
+
+        for section, summary in summaries.items():
+            st.markdown(f"### 🧩 {section}")
+            st.write(summary)
+
+        os.remove(pdf_path)  # cleanup
+    else:
+        st.error("❌ Failed to fetch paper. Try another ID or keyword.")
